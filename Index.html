@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recruitment Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --primary:#6366f1;--success:#10b981;--danger:#ef4444;
+            --bg:#f8fafc;--card:#fff;--text:#0f172a;--text-light:#64748b;--border:#e2e8f0;
+            --shadow:0 1px 3px rgba(0,0,0,.08);--shadow-lg:0 8px 20px rgba(0,0,0,.1);
+        }
+        body.dark{--bg:#0f172a;--card:#1e293b;--text:#f8fafc;--text-light:#94a3b8;--border:#334155}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+        .container{max-width:100%;padding:20px}
+        
+        header{background:linear-gradient(135deg,#667eea,#764ba2);padding:20px 30px;margin-bottom:20px;color:#fff;display:flex;justify-content:space-between;align-items:center;border-radius:12px;box-shadow:var(--shadow-lg);flex-wrap:wrap;gap:12px}
+        .header-left h1{font-size:26px;font-weight:700;margin-bottom:3px}
+        .header-left .subtitle{font-size:12px;opacity:.9}
+        .header-actions{display:flex;gap:8px;flex-wrap:wrap}
+        
+        .btn{padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px;box-shadow:var(--shadow)}
+        .btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-lg)}
+        .btn:active{transform:translateY(0)}
+        .btn-primary{background:#fff;color:var(--primary)}
+        .btn-primary:hover{background:#f8fafc}
+        .btn-secondary{background:rgba(255,255,255,.15);color:#fff;backdrop-filter:blur(10px)}
+        .btn-secondary:hover{background:rgba(255,255,255,.25)}
+        .btn-clear{background:#ef4444;color:#fff}
+        .btn-clear:hover{background:#dc2626}
+        
+        .filters{background:var(--card);padding:16px 20px;margin-bottom:18px;border-radius:12px;box-shadow:var(--shadow);border:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+        .filter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;flex:1}
+        .filter-group{display:flex;flex-direction:column;gap:4px}
+        .filter-group label{font-size:10px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px}
+        .filter-group select{padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px;font-weight:500;cursor:pointer;transition:border-color .2s}
+        .filter-group select:hover{border-color:var(--primary)}
+        .filter-group select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+        
+        .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px}
+        .kpi-card{background:var(--card);padding:16px 18px;border-radius:10px;border-left:3px solid var(--primary);box-shadow:var(--shadow);transition:.2s}
+        .kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+        .kpi-label{font-size:10px;color:var(--text-light);font-weight:700;text-transform:uppercase;margin-bottom:6px;letter-spacing:.5px}
+        .kpi-value{font-size:28px;font-weight:800;color:var(--primary);line-height:1;margin-bottom:3px}
+        .kpi-subtitle{font-size:11px;color:var(--text-light);font-weight:500}
+        
+        .chart-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:18px}
+        .chart-container{background:var(--card);padding:18px;border-radius:12px;box-shadow:var(--shadow)}
+        .chart-container.full{grid-column:1/-1}
+        .chart-title{font-size:15px;font-weight:700;margin-bottom:14px;color:var(--text)}
+        
+        .table-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:18px}
+        .table-container{background:var(--card);padding:18px;border-radius:12px;box-shadow:var(--shadow)}
+        .table-container.full{grid-column:1/-1}
+        
+        table{width:100%;border-collapse:collapse;font-size:12px}
+        th{background:var(--bg);padding:9px 10px;text-align:left;font-weight:700;border-bottom:2px solid var(--border);font-size:10px;text-transform:uppercase;color:var(--text-light);letter-spacing:.5px}
+        td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text)}
+        tbody tr:hover{background:var(--bg)}
+        
+        .status-badge{padding:3px 9px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;display:inline-block}
+        .status-open{background:#dbeafe;color:#1e40af}
+        .status-closed{background:#dcfce7;color:#166534}
+        .status-onhold{background:#fef3c7;color:#92400e}
+        
+        .error{background:#fee2e2;border:2px solid var(--danger);color:#991b1d;padding:18px;border-radius:10px;margin:18px 0}
+        .loading{text-align:center;padding:40px;color:var(--text-light)}
+        .spinner{border:3px solid var(--border);border-top:3px solid var(--primary);border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:0 auto 15px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        
+        @media(max-width:1200px){
+            .chart-grid,.table-grid{grid-template-columns:1fr}
+            header{flex-direction:column;align-items:flex-start}
+            .filters{flex-direction:column;align-items:stretch}
+            .filter-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <h1>🚀 Recruitment Dashboard</h1>
+                <p class="subtitle">Real-time analytics from Google Sheets</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="loadData()">🔄 Refresh</button>
+                <button class="btn btn-secondary" onclick="exportCSV()">📥 Export</button>
+                <button class="btn btn-secondary" onclick="toggleDark()">🌓 Theme</button>
+            </div>
+        </header>
+        
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <div>Loading data from Google Sheets...</div>
+        </div>
+        
+        <div id="error"></div>
+        <div id="dashboard" style="display:none"></div>
+    </div>
+    
+    <script>
+        // 🔴 PASTE YOUR WEB APP URL HERE (from Google Apps Script deployment)
+        const API_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
+        
+        let allData=[],filteredData=[],funnelChart,trendChart,recruiterMonthChart;
+        
+        window.onload=()=>{
+            if(localStorage.getItem('dark')==='true')document.body.classList.add('dark');
+            loadData();
+        };
+        
+        function toggleDark(){
+            document.body.classList.toggle('dark');
+            localStorage.setItem('dark',document.body.classList.contains('dark'));
+            if(funnelChart){renderCharts();renderRecruiterMonthly();}
+        }
+        
+        async function loadData(){
+            if(API_URL==='PASTE_YOUR_WEB_APP_URL_HERE'){
+                showError('Please configure API_URL in the code. Deploy Code.gs as Web App and paste the URL.');
+                return;
+            }
+            
+            document.getElementById('loading').style.display='block';
+            document.getElementById('dashboard').style.display='none';
+            document.getElementById('error').innerHTML='';
+            
+            try{
+                const response=await fetch(API_URL);
+                const data=await response.json();
+                
+                if(data.error){
+                    showError('Error: '+data.error);
+                    return;
+                }
+                
+                if(!data.success||!data.data||data.data.length===0){
+                    showError('No data found in Google Sheet');
+                    return;
+                }
+                
+                processData(data.data);
+            }catch(error){
+                showError('Failed to load data: '+error.message);
+            }
+        }
+        
+        function processData(data){
+            allData=data.map(row=>({
+                Req_ID:row.Req_ID||'Unknown',
+                Role_Title:row.Role_Title||'Unknown',
+                Department:row.Department||'Unknown',
+                Location:row.Location||'Unknown',
+                Recruiter:row.Recruiter||'Unknown',
+                Status:row.Status||'Open',
+                Open_Date:row.Open_Date||'',
+                Close_Date:row.Close_Date||'',
+                Submissions:parseInt(row.Submissions)||0,
+                Interviews:parseInt(row.Interviews)||0,
+                Offers_Made:parseInt(row.Offers_Made)||0,
+                Offers_Accepted:parseInt(row.Offers_Accepted)||0,
+                Joined:parseInt(row.Joined)||0,
+                Offer_Dropped:parseInt(row.Offer_Dropped)||0
+            }));
+            
+            document.getElementById('loading').style.display='none';
+            document.getElementById('dashboard').style.display='block';
+            document.getElementById('dashboard').innerHTML=`
+                <div class="filters">
+                    <div class="filter-grid">
+                        <div class="filter-group"><label>👤 Recruiter</label><select id="recruiterFilter" onchange="applyFilters()"></select></div>
+                        <div class="filter-group"><label>🏢 Department</label><select id="departmentFilter" onchange="applyFilters()"></select></div>
+                        <div class="filter-group"><label>🎯 Status</label><select id="statusFilter" onchange="applyFilters()"></select></div>
+                        <div class="filter-group"><label>📍 Location</label><select id="locationFilter" onchange="applyFilters()"></select></div>
+                        <div class="filter-group"><label>📅 Month</label><select id="monthFilter" onchange="applyFilters()"></select></div>
+                        <div class="filter-group"><label>📆 Year</label><select id="yearFilter" onchange="applyFilters()"></select></div>
+                    </div>
+                    <button class="btn btn-clear" onclick="clearFilters()">✖ Clear</button>
+                </div>
+                
+                <div class="kpi-grid" id="kpis"></div>
+                
+                <div class="chart-grid">
+                    <div class="chart-container"><h3 class="chart-title">📊 Recruitment Funnel</h3><canvas id="funnelChart"></canvas></div>
+                    <div class="chart-container"><h3 class="chart-title">📈 Weekly Trends</h3><canvas id="trendChart"></canvas></div>
+                </div>
+                
+                <div class="chart-container full" style="margin-bottom:18px">
+                    <h3 class="chart-title">👥 Recruiter Performance by Month</h3>
+                    <canvas id="recruiterMonthChart"></canvas>
+                </div>
+                
+                <div class="table-grid">
+                    <div class="table-container"><h3 class="chart-title">🏆 Recruiter Performance</h3><table id="recruiterTable"></table></div>
+                    <div class="table-container"><h3 class="chart-title">🏢 Department Pipeline</h3><table id="deptTable"></table></div>
+                </div>
+                
+                <div class="table-container full">
+                    <h3 class="chart-title">📋 All Requisitions</h3>
+                    <div style="overflow-x:auto"><table id="reqTable"></table></div>
+                </div>
+            `;
+            
+            populateFilters();
+            applyFilters();
+        }
+        
+        function showError(msg){
+            document.getElementById('loading').style.display='none';
+            document.getElementById('error').innerHTML='<div class="error"><strong>Error:</strong> '+msg+'</div>';
+        }
+        
+        function populateFilters(){
+            populateSelect('recruiterFilter',[...new Set(allData.map(r=>r.Recruiter))].sort());
+            populateSelect('departmentFilter',[...new Set(allData.map(r=>r.Department))].sort());
+            populateSelect('statusFilter',[...new Set(allData.map(r=>r.Status))].sort());
+            populateSelect('locationFilter',[...new Set(allData.map(r=>r.Location))].sort());
+            
+            const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            document.getElementById('monthFilter').innerHTML='<option value="">All Months</option>'+
+                months.map((m,i)=>'<option value="'+(i+1)+'">'+m+'</option>').join('');
+            
+            const years=[...new Set(allData.map(r=>{
+                const d=r.Open_Date;
+                return d?new Date(d).getFullYear():null;
+            }).filter(Boolean))].sort((a,b)=>b-a);
+            document.getElementById('yearFilter').innerHTML='<option value="">All Years</option>'+
+                years.map(y=>'<option value="'+y+'">'+y+'</option>').join('');
+        }
+        
+        function populateSelect(id,values){
+            const select=document.getElementById(id);
+            if(select)select.innerHTML='<option value="">All</option>'+values.map(v=>'<option value="'+v+'">'+v+'</option>').join('');
+        }
+        
+        function clearFilters(){
+            document.getElementById('recruiterFilter').value='';
+            document.getElementById('departmentFilter').value='';
+            document.getElementById('statusFilter').value='';
+            document.getElementById('locationFilter').value='';
+            document.getElementById('monthFilter').value='';
+            document.getElementById('yearFilter').value='';
+            applyFilters();
+        }
+        
+        function applyFilters(){
+            const recruiter=document.getElementById('recruiterFilter')?.value||'';
+            const department=document.getElementById('departmentFilter')?.value||'';
+            const status=document.getElementById('statusFilter')?.value||'';
+            const location=document.getElementById('locationFilter')?.value||'';
+            const month=document.getElementById('monthFilter')?.value||'';
+            const year=document.getElementById('yearFilter')?.value||'';
+            
+            filteredData=allData.filter(row=>{
+                if(recruiter&&row.Recruiter!==recruiter)return false;
+                if(department&&row.Department!==department)return false;
+                if(status&&row.Status!==status)return false;
+                if(location&&row.Location!==location)return false;
+                
+                if(month||year){
+                    const date=new Date(row.Open_Date||'');
+                    if(month&&(date.getMonth()+1)!=month)return false;
+                    if(year&&date.getFullYear()!=year)return false;
+                }
+                
+                return true;
+            });
+            
+            renderKPIs();
+            renderCharts();
+            renderRecruiterMonthly();
+            renderTables();
+        }
+        
+        function renderKPIs(){
+            const total=filteredData.length;
+            const open=filteredData.filter(r=>r.Status==='Open').length;
+            const submissions=filteredData.reduce((s,r)=>s+r.Submissions,0);
+            const interviews=filteredData.reduce((s,r)=>s+r.Interviews,0);
+            const offers=filteredData.reduce((s,r)=>s+r.Offers_Made,0);
+            const accepted=filteredData.reduce((s,r)=>s+r.Offers_Accepted,0);
+            const joined=filteredData.reduce((s,r)=>s+r.Joined,0);
+            
+            const kpis=[
+                {label:'Total Roles',value:total,subtitle:open+' open'},
+                {label:'Submissions',value:submissions,subtitle:submissions>0?((interviews/submissions)*100).toFixed(1)+'% → Int':''},
+                {label:'Interviews',value:interviews,subtitle:interviews>0?((offers/interviews)*100).toFixed(1)+'% → Offer':''},
+                {label:'Offers',value:offers,subtitle:offers>0?((accepted/offers)*100).toFixed(1)+'% accepted':''},
+                {label:'Joined',value:joined}
+            ];
+            
+            document.getElementById('kpis').innerHTML=kpis.map(k=>
+                '<div class="kpi-card"><div class="kpi-label">'+k.label+'</div><div class="kpi-value">'+k.value+'</div>'+
+                (k.subtitle?'<div class="kpi-subtitle">'+k.subtitle+'</div>':'')+'</div>'
+            ).join('');
+        }
+        
+        function renderCharts(){
+            const isDark=document.body.classList.contains('dark');
+            const gridColor=isDark?'#334155':'#e2e8f0';
+            const textColor=isDark?'#94a3b8':'#64748b';
+            
+            const submissions=filteredData.reduce((s,r)=>s+r.Submissions,0);
+            const interviews=filteredData.reduce((s,r)=>s+r.Interviews,0);
+            const offers=filteredData.reduce((s,r)=>s+r.Offers_Made,0);
+            const accepted=filteredData.reduce((s,r)=>s+r.Offers_Accepted,0);
+            const joined=filteredData.reduce((s,r)=>s+r.Joined,0);
+            
+            const ctx1=document.getElementById('funnelChart');
+            if(funnelChart)funnelChart.destroy();
+            funnelChart=new Chart(ctx1,{
+                type:'bar',
+                data:{
+                    labels:['Submissions','Interviews','Offers','Accepted','Joined'],
+                    datasets:[{data:[submissions,interviews,offers,accepted,joined],backgroundColor:['#6366f1','#10b981','#f59e0b','#8b5cf6','#06b6d4'],borderRadius:6}]
+                },
+                options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:gridColor},ticks:{color:textColor}},y:{grid:{display:false},ticks:{color:textColor}}}}
+            });
+            
+            const weeklyData={};
+            filteredData.forEach(row=>{
+                if(row.Open_Date){
+                    const week=getWeek(row.Open_Date);
+                    if(!weeklyData[week])weeklyData[week]={opened:0,joined:0};
+                    weeklyData[week].opened++;
+                    weeklyData[week].joined+=row.Joined;
+                }
+            });
+            
+            const weeks=Object.keys(weeklyData).sort().slice(-12);
+            const ctx2=document.getElementById('trendChart');
+            if(trendChart)trendChart.destroy();
+            trendChart=new Chart(ctx2,{
+                type:'line',
+                data:{
+                    labels:weeks,
+                    datasets:[
+                        {label:'Opened',data:weeks.map(w=>weeklyData[w].opened),borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.1)',fill:true,tension:.4},
+                        {label:'Joined',data:weeks.map(w=>weeklyData[w].joined),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:.4}
+                    ]
+                },
+                options:{plugins:{legend:{labels:{color:textColor}}},scales:{x:{grid:{color:gridColor},ticks:{color:textColor}},y:{grid:{color:gridColor},ticks:{color:textColor}}}}
+            });
+        }
+        
+        function renderRecruiterMonthly(){
+            const isDark=document.body.classList.contains('dark');
+            const gridColor=isDark?'#334155':'#e2e8f0';
+            const textColor=isDark?'#94a3b8':'#64748b';
+            
+            const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const recruiterMonthly={};
+            
+            filteredData.forEach(row=>{
+                if(row.Open_Date){
+                    const date=new Date(row.Open_Date);
+                    const month=monthNames[date.getMonth()]+' '+date.getFullYear();
+                    const recruiter=row.Recruiter;
+                    
+                    if(!recruiterMonthly[recruiter])recruiterMonthly[recruiter]={};
+                    if(!recruiterMonthly[recruiter][month])recruiterMonthly[recruiter][month]=0;
+                    recruiterMonthly[recruiter][month]+=row.Joined;
+                }
+            });
+            
+            const allMonths=[...new Set(filteredData.map(r=>{
+                if(r.Open_Date){
+                    const date=new Date(r.Open_Date);
+                    return monthNames[date.getMonth()]+' '+date.getFullYear();
+                }
+                return null;
+            }).filter(Boolean))].sort().slice(-6);
+            
+            const datasets=Object.entries(recruiterMonthly).map(([recruiter,months])=>({
+                label:recruiter,
+                data:allMonths.map(m=>months[m]||0),
+                borderWidth:2,
+                tension:.4
+            }));
+            
+            const ctx3=document.getElementById('recruiterMonthChart');
+            if(recruiterMonthChart)recruiterMonthChart.destroy();
+            recruiterMonthChart=new Chart(ctx3,{
+                type:'line',
+                data:{labels:allMonths,datasets:datasets},
+                options:{
+                    responsive:true,
+                    plugins:{legend:{labels:{color:textColor}}},
+                    scales:{x:{grid:{color:gridColor},ticks:{color:textColor}},y:{grid:{color:gridColor},ticks:{color:textColor},beginAtZero:true}}
+                }
+            });
+        }
+        
+        function getWeek(dateStr){
+            const date=new Date(dateStr);
+            const year=date.getFullYear();
+            const week=Math.ceil((date-new Date(year,0,1))/(7*24*60*60*1000));
+            return year+'-W'+String(week).padStart(2,'0');
+        }
+        
+        function renderTables(){
+            const recruiterStats={};
+            filteredData.forEach(row=>{
+                const r=row.Recruiter;
+                if(!recruiterStats[r])recruiterStats[r]={open:0,submissions:0,interviews:0,joined:0};
+                if(row.Status==='Open')recruiterStats[r].open++;
+                recruiterStats[r].submissions+=row.Submissions;
+                recruiterStats[r].interviews+=row.Interviews;
+                recruiterStats[r].joined+=row.Joined;
+            });
+            
+            const recruiters=Object.entries(recruiterStats).map(([name,stats])=>({name,...stats})).sort((a,b)=>b.joined-a.joined);
+            document.getElementById('recruiterTable').innerHTML=
+                '<thead><tr><th>Recruiter</th><th>Open</th><th>Subs</th><th>Ints</th><th>Joined</th></tr></thead><tbody>'+
+                recruiters.map(r=>'<tr><td><strong>'+r.name+'</strong></td><td>'+r.open+'</td><td>'+r.submissions+'</td><td>'+r.interviews+'</td><td><strong>'+r.joined+'</strong></td></tr>').join('')+
+                '</tbody>';
+            
+            const deptStats={};
+            filteredData.forEach(row=>{
+                const d=row.Department;
+                if(!deptStats[d])deptStats[d]={open:0,joined:0,offers:0};
+                if(row.Status==='Open')deptStats[d].open++;
+                deptStats[d].joined+=row.Joined;
+                deptStats[d].offers+=row.Offers_Made;
+            });
+            
+            const depts=Object.entries(deptStats).map(([name,stats])=>({name,...stats})).sort((a,b)=>b.open-a.open);
+            document.getElementById('deptTable').innerHTML=
+                '<thead><tr><th>Department</th><th>Open</th><th>Offers</th><th>Joined</th></tr></thead><tbody>'+
+                depts.map(d=>'<tr><td><strong>'+d.name+'</strong></td><td><strong>'+d.open+'</strong></td><td>'+d.offers+'</td><td>'+d.joined+'</td></tr>').join('')+
+                '</tbody>';
+            
+            document.getElementById('reqTable').innerHTML=
+                '<thead><tr><th>Req ID</th><th>Role</th><th>Dept</th><th>Recruiter</th><th>Status</th><th>Subs</th><th>Ints</th><th>Joined</th></tr></thead><tbody>'+
+                filteredData.slice(0,50).map(r=>'<tr><td><strong>'+r.Req_ID+'</strong></td><td>'+r.Role_Title+'</td><td>'+r.Department+'</td><td>'+r.Recruiter+'</td><td><span class="status-badge status-'+r.Status.toLowerCase().replace(' ','')+'">'+r.Status+'</span></td><td>'+r.Submissions+'</td><td>'+r.Interviews+'</td><td><strong>'+r.Joined+'</strong></td></tr>').join('')+
+                '</tbody>';
+        }
+        
+        function exportCSV(){
+            const cols=['Req_ID','Role_Title','Department','Location','Recruiter','Status','Submissions','Interviews','Offers_Made','Joined'];
+            const csv=[cols.join(','),...filteredData.map(r=>cols.map(c=>r[c]).join(','))].join('\n');
+            const blob=new Blob([csv],{type:'text/csv'});
+            const url=URL.createObjectURL(blob);
+            const a=document.createElement('a');
+            a.href=url;
+            a.download='recruitment_'+new Date().toISOString().split('T')[0]+'.csv';
+            a.click();
+        }
+    </script>
+</body>
+</html>
